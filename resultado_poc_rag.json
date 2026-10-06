@@ -1,0 +1,169 @@
+{
+  "poc": "03_rag_retrieval",
+  "objetivo": "verificar pertinencia de la recuperacion por factor SHAP",
+  "modelo_embeddings": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "dimensiones": 384,
+  "fragmentos_indexados": 16,
+  "top_k": 4,
+  "metricas": {
+    "con_mapeo": {
+      "p_at_4": 0.438,
+      "r_at_4": 0.938,
+      "mrr": 0.833,
+      "distractores_recuperados": 2,
+      "total_recuperados": 32
+    },
+    "sin_mapeo": {
+      "p_at_4": 0.281,
+      "r_at_4": 0.583,
+      "mrr": 0.5,
+      "distractores_recuperados": 2,
+      "total_recuperados": 32
+    }
+  },
+  "techo_teorico_p_at_4": 0.469,
+  "similitud_distractores": [
+    0.474,
+    0.498
+  ],
+  "similitud_pertinentes": [
+    0.513,
+    0.845
+  ],
+  "primeros_resultados_equivocados": [
+    {
+      "variable": "ratio_cuota_ingreso",
+      "primero": "F02",
+      "esperado": [
+        "F09",
+        "F10"
+      ]
+    },
+    {
+      "variable": "ingreso_peor_mes",
+      "primero": "F03",
+      "esperado": [
+        "F06",
+        "F07"
+      ]
+    }
+  ],
+  "probabilidad_riesgo": 0.78,
+  "recuperacion": {
+    "gasto_mensual_promedio": [
+      {
+        "id": "F01",
+        "similitud": 0.7344,
+        "fuente": "Guia de presupuesto MYPE",
+        "pagina": 12
+      },
+      {
+        "id": "F06",
+        "similitud": 0.6611,
+        "fuente": "Manual de finanzas del emprendedor",
+        "pagina": 44
+      },
+      {
+        "id": "F03",
+        "similitud": 0.6484,
+        "fuente": "Manual de finanzas del emprendedor",
+        "pagina": 31
+      },
+      {
+        "id": "F02",
+        "similitud": 0.5726,
+        "fuente": "Guia de presupuesto MYPE",
+        "pagina": 14
+      }
+    ],
+    "num_creditos_activos": [
+      {
+        "id": "F08",
+        "similitud": 0.7815,
+        "fuente": "Guia de uso responsable del credito",
+        "pagina": 19
+      },
+      {
+        "id": "F09",
+        "similitud": 0.7255,
+        "fuente": "Guia de uso responsable del credito",
+        "pagina": 21
+      },
+      {
+        "id": "F11",
+        "similitud": 0.7043,
+        "fuente": "Guia de uso responsable del credito",
+        "pagina": 28
+      },
+      {
+        "id": "F10",
+        "similitud": 0.6785,
+        "fuente": "Guia de uso responsable del credito",
+        "pagina": 25
+      }
+    ],
+    "ingreso_peor_mes": [
+      {
+        "id": "F03",
+        "similitud": 0.6404,
+        "fuente": "Manual de finanzas del emprendedor",
+        "pagina": 31
+      },
+      {
+        "id": "F02",
+        "similitud": 0.6138,
+        "fuente": "Guia de presupuesto MYPE",
+        "pagina": 14
+      },
+      {
+        "id": "F06",
+        "similitud": 0.5996,
+        "fuente": "Manual de finanzas del emprendedor",
+        "pagina": 44
+      },
+      {
+        "id": "F01",
+        "similitud": 0.5977,
+        "fuente": "Guia de presupuesto MYPE",
+        "pagina": 12
+      }
+    ],
+    "ahorro_mensual": [
+      {
+        "id": "F04",
+        "similitud": 0.6981,
+        "fuente": "Claves para ahorrar",
+        "pagina": 5
+      },
+      {
+        "id": "F05",
+        "similitud": 0.6396,
+        "fuente": "Claves para ahorrar",
+        "pagina": 8
+      },
+      {
+        "id": "F07",
+        "similitud": 0.6032,
+        "fuente": "Manual de finanzas del emprendedor",
+        "pagina": 46
+      },
+      {
+        "id": "F02",
+        "similitud": 0.5265,
+        "fuente": "Guia de presupuesto MYPE",
+        "pagina": 14
+      }
+    ]
+  },
+  "prompt_caracteres": 3386,
+  "fuentes_citables": [
+    "[Guia de presupuesto MYPE, p.12]",
+    "[Manual de finanzas del emprendedor, p.44]",
+    "[Guia de uso responsable del credito, p.19]",
+    "[Guia de uso responsable del credito, p.21]",
+    "[Manual de finanzas del emprendedor, p.31]",
+    "[Guia de presupuesto MYPE, p.14]",
+    "[Claves para ahorrar, p.5]",
+    "[Claves para ahorrar, p.8]"
+  ]
+}

@@ -1,0 +1,115 @@
+==============================================================================
+PoC 03 - RECUPERACION AUMENTADA (RAG) | Capa 4
+==============================================================================
+
+[PASO 1] Cargando modelo de embeddings
+  modelo      : sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+  dimensiones : 384
+  carga       : 5.9 s
+
+[PASO 2] Indexacion del corpus (16 fragmentos)
+  matriz      : (16, 384)  <- (fragmentos, dimensiones)
+  tiempo      : 0.53 s  (33 ms por fragmento)
+  vector F01  : [-0.023600000888109207, 0.0364999994635582, -0.032600000500679016, 0.0044999998062849045, 0.08780000358819962, 0.04270000010728836] ... (378 mas)
+  --> esto se hace UNA VEZ. En produccion vive en conocimiento.fragmentos
+
+[PASO 3] Simulacion de salida de SHAP (contrato de la capa 3)
+  gasto_mensual_promedio   shap=+0.21  valor=900.0
+  num_creditos_activos     shap=+0.15  valor=4
+  ingreso_peor_mes         shap=+0.12  valor=640.0
+  ahorro_mensual           shap=-0.09  valor=290.0
+
+[PASO 4] Recuperacion por factor
+
+  gasto_mensual_promedio
+    consulta : "control de gastos y presupuesto mensual del negocio"
+    OK F01  sim=0.7344  [Guia de presupuesto MYPE p.12]
+        El presupuesto mensual es la herramienta base para ordenar un negocio pequeno. Se recomi...
+    -- F06  sim=0.6611  [Manual de finanzas del emprendedor p.44]
+        Los negocios con ventas estacionales deben planificar sobre el mes de menor ingreso del ...
+    -- F03  sim=0.6484  [Manual de finanzas del emprendedor p.31]
+        Mezclar el dinero del negocio con el del hogar impide saber si el emprendimiento es rent...
+    OK F02  sim=0.5726  [Guia de presupuesto MYPE p.14]
+        Cuando el gasto mensual promedio supera el 70% del ingreso, el margen para imprevistos d...
+
+  num_creditos_activos
+    consulta : "multiples deudas simultaneas y sobreendeudamiento"
+    OK F08  sim=0.7815  [Guia de uso responsable del credito p.19]
+        Mantener varias deudas simultaneas en distintas entidades eleva el costo total y dificul...
+    OK F09  sim=0.7255  [Guia de uso responsable del credito p.21]
+        La cuota total de las deudas no deberia superar el 30% del ingreso mensual neto. Por enc...
+    -- F11  sim=0.7043  [Guia de uso responsable del credito p.28]
+        Si ya existe atraso en los pagos, la reprogramacion de deuda permite extender el plazo y...
+    OK F10  sim=0.6785  [Guia de uso responsable del credito p.25]
+        Antes de asumir una nueva deuda debe calcularse la capacidad de pago: ingreso neto menos...
+
+  ingreso_peor_mes
+    consulta : "ingresos estacionales e irregulares del emprendimiento"
+    -- F03  sim=0.6404  [Manual de finanzas del emprendedor p.31]
+        Mezclar el dinero del negocio con el del hogar impide saber si el emprendimiento es rent...
+    -- F02  sim=0.6138  [Guia de presupuesto MYPE p.14]
+        Cuando el gasto mensual promedio supera el 70% del ingreso, el margen para imprevistos d...
+    OK F06  sim=0.5996  [Manual de finanzas del emprendedor p.44]
+        Los negocios con ventas estacionales deben planificar sobre el mes de menor ingreso del ...
+    -- F01  sim=0.5977  [Guia de presupuesto MYPE p.12]
+        El presupuesto mensual es la herramienta base para ordenar un negocio pequeno. Se recomi...
+
+  ahorro_mensual
+    consulta : "habito de ahorro y fondo de emergencia"
+    OK F04  sim=0.6981  [Claves para ahorrar p.5]
+        El fondo de emergencia debe cubrir entre tres y seis meses de gastos esenciales. Para qu...
+    OK F05  sim=0.6396  [Claves para ahorrar p.8]
+        Ahorrar un porcentaje fijo del ingreso funciona mejor que ahorrar lo que sobra a fin de ...
+    -- F07  sim=0.6032  [Manual de finanzas del emprendedor p.46]
+        Ante ingresos irregulares se recomienda construir una reserva durante los meses de campa...
+    -- F02  sim=0.5265  [Guia de presupuesto MYPE p.14]
+        Cuando el gasto mensual promedio supera el 70% del ingreso, el margen para imprevistos d...
+
+==============================================================================
+[PASO 5] METRICAS DE RECUPERACION (las 8 variables mapeadas)
+==============================================================================
+
+                                       P@4     R@4     MRR  distract.
+CON tabla de mapeo                   0.438   0.938   0.833       2 / 32
+SIN mapeo (nombre de columna)        0.281   0.583   0.500       2 / 32
+
+  P@4 = de los 4 traidos, cuantos son pertinentes
+  R@4 = de los pertinentes que existen, cuantos se trajeron
+  MRR = que tan arriba aparece el primer acierto (1.0 = primer puesto)
+
+==============================================================================
+[PASO 5b] TECHO TEORICO, DISTRACTORES Y UMBRAL DE CORTE (con mapeo)
+==============================================================================
+  Techo teorico de P@4 con este corpus: 0.469
+  distractor: mezcla_negocio_hogar     -> D03 Guia de inversiones  sim=0.498
+  distractor: mezcla_negocio_hogar     -> D02 Guia previsional  sim=0.474
+  Similitud de distractores recuperados : 0.474 a 0.498
+  Similitud de fragmentos pertinentes   : 0.513 a 0.845
+  Primer resultado equivocado: ratio_cuota_ingreso      1ro=F02 esperado=['F09', 'F10']
+  Primer resultado equivocado: ingreso_peor_mes         1ro=F03 esperado=['F06', 'F07']
+
+==============================================================================
+[PASO 6] PROMPT ENSAMBLADO (lo unico que vera el LLM)
+==============================================================================
+Eres un asesor financiero para mujeres emprendedoras del sector MYPE en Peru.
+
+REGLAS ESTRICTAS:
+- Usa UNICAMENTE la informacion del CONTEXTO.
+- Si el CONTEXTO no cubre un factor, escribe exactamente:
+  "No hay informacion suficiente en la base de conocimiento."
+- Prohibido usar conocimiento propio o cifras que no esten en el CONTEXTO.
+- Cita la fuente entre corchetes en cada recomendacion.
+- Responde solo con JSON valido.
+
+CONTEXTO:
+[Guia de presupuesto MYPE, p.12] El presupuesto mensual es la herramienta base para ordenar un negocio pequeno. Se recomienda registrar todos los egresos durante al menos tres meses seguidos, separandolos en gastos fijos y gastos variables. Los gastos hormiga, pequenos y frecuentes, suelen representar entre 10% y 15% del gasto total y son el primer lugar donde recortar sin afectar la operacion del negocio.
+[Manual de finanzas del emprendedor, p.44] Los negocios con ventas estacionales deben planificar sobre el mes de menor ingreso del ano, no sobre el promedio. Presupuestar con el promedio genera deficit sistematico en los meses bajos y obliga a recurrir al credito de corto plazo justo cuando la capacidad de pago es menor.
+[Guia de uso responsable del credito, p.19] Mantener varias deudas simultaneas en distintas entidades eleva el costo total y dificulta el seguimiento de los vencimientos. Cuando existen tres o mas creditos activos conviene evaluar una consolidacion: un solo credito que cancele los demas, siempre que la tasa resultante sea menor
+  ...
+
+  tamano del prompt : 3386 caracteres (~846 tokens)
+  fuentes citables  : 8
+  --> el LLM NO consulta la base. Solo recibe este string.
+
+[PASO 7] Archivo generado: resultado_poc_rag.json
+==============================================================================
